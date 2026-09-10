@@ -14,4 +14,4 @@ Execute the commands below to have a local mini server that does some stuff
 
 ### Sends GET requests
 1. `go build -o sendreq ./sendreq.go`
-2. `./sendreq -host eblog.fly.dev -port 8080`
+2. `./sendreq -host eblog.fly.dev -port 8080 -tls true`
