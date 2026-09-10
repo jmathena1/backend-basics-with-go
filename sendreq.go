@@ -4,6 +4,7 @@ package main
 
 import (
     "bufio"
+	"crypto/tls"
     "flag"
     "fmt"
     "log"
@@ -16,6 +17,7 @@ import (
 var (
     host, path, method string
     port               int
+    usetls             bool
 )
 
 func main() {
@@ -24,6 +26,7 @@ func main() {
     flag.StringVar(&host, "host", "localhost", "host to connect to")
     flag.IntVar(&port, "port", 8080, "port to connect to")
     flag.StringVar(&path, "path", "/", "path to request")
+    flag.BoolVar(&usetls, "tls", false, "wrap the connection in TLS (i.e, speak https)")
     flag.Parse()
 
     // ResolveTCPAddr is a slightly more convenient way of creating a TCPAddr.
@@ -34,9 +37,21 @@ func main() {
     }
 
     // dial the remote host using the TCPAddr we just created...
-    conn, err := net.DialTCP("tcp", nil, ip)
+    tcpconn, err := net.DialTCP("tcp", nil, ip)
     if err != nil {
         panic(err)
+    }
+
+    var conn net.Conn = tcpconn
+
+    if usetls {
+        tlsconn := tls.Client(tcpconn, &tls.Config{ServerName: host})
+        if err := tlsconn.Handshake(); err != nil {
+            panic(err)
+        }
+        state := tlsconn.ConnectionState()
+        log.Printf("tls handshake ok: version=%x cipher=%x", state.Version, state.CipherSuite)
+        conn = tlsconn
     }
 
     log.Printf("connected to %s (@ %s)", host, conn.RemoteAddr())
